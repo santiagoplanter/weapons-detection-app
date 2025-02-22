@@ -222,37 +222,35 @@ if page == "DEMO":
 
     # 📹 Live Webcam Detection with Stop Button
     st.markdown("""
-        <h1 style="font-family: \'Open Sans\', sans-serif; font-size: 48px; font-weight: 800; text-align: center">
+        <h1 style="font-family: 'Open Sans', sans-serif; font-size: 48px; font-weight: 800; text-align: center">
             TRY WITH LIVE WEBCAM</h1>
             """, unsafe_allow_html=True) 
-    col1, col2 = st.columns(2)
-    with col1:
-        start_button = st.button("Start Live Camera")
-    with col2:
-        stop_button = st.button("Stop Camera")
-
-def video_frame_callback(frame):
-    img = frame.to_ndarray(format="bgr24")  # Convertir el frame a NumPy array
     
-    # Realizar inferencia con YOLO
-    results = model(img)
+    # 🔹 Define la función antes de llamarla
+    def video_frame_callback(frame):
+        img = frame.to_ndarray(format="bgr24")  # Convertir el frame a NumPy array
+        
+        # Realizar inferencia con YOLO
+        results = model(img)
+        
+        # Dibujar cajas en la imagen
+        for result in results:
+            for box in result.boxes:
+                confidence = box.conf[0].item()
+                if confidence >= 0.5:
+                    x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
+                    class_id = int(box.cls[0])
+                    label = f"{model.names[class_id]}: {confidence:.2f}"
+                    
+                    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
+                    cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
-    # Dibujar cajas en la imagen
-    for result in results:
-        for box in result.boxes:
-            confidence = box.conf[0].item()
-            if confidence >= 0.5:
-                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                class_id = int(box.cls[0])
-                label = f"{model.names[class_id]}: {confidence:.2f}"
-                
-                cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
-                cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+    
+    # 🔹 Solo iniciar la cámara si el usuario presiona el botón
+    if st.button("Start Live Camera"):
+        webrtc_streamer(key="example", video_frame_callback=video_frame_callback)
 
-    return av.VideoFrame.from_ndarray(img, format="bgr24")
-
-# Iniciar streaming
-webrtc_streamer(key="example", video_frame_callback=video_frame_callback)
 
 
 st.image('images/line.png')
