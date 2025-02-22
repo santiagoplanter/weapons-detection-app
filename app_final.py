@@ -219,14 +219,14 @@ if page == "DEMO":
     
     st.image("images/line.png")
     
-        # Mostrar la imagen con detecciones
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col1:
-            st.empty()
-        with col2:
-            st.image(image_with_boxes, caption="Detected Image", use_container_width=True)
-        with col3:
-            st.empty()
+    # Mostrar la imagen con detecciones
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col1:
+        st.empty()
+    with col2:
+        st.image(image_with_boxes, caption="Detected Image", use_container_width=True)
+    with col3:
+        st.empty()
 
 
         # Draw detections only if confidence is greater than or equal to 0.5
