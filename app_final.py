@@ -229,6 +229,7 @@ st.markdown("### Prueba de Cámara en Vivo")
 webrtc_streamer(
     key="test",
     video_processor_factory=VideoProcessor,
+    async_processing=True,  # Ayuda a mantener la conexión activa
     rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
