@@ -230,28 +230,29 @@ if page == "DEMO":
 
 
 class VideoProcessor(VideoProcessorBase):
+    def __init__(self):
+        self.frame_count = 0  # Contador de frames
+
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")  # Convertir frame a NumPy array
-        
-        # Escribir en los logs para ver si llega aquí
-        st.write("Frame recibido")
+        self.frame_count += 1  # Incrementar contador
 
-        # Realizar inferencia con YOLO
-        results = model(img)
-        
-        # Dibujar cajas en la imagen
-        for result in results:
-            for box in result.boxes:
-                confidence = box.conf[0].item()
-                if confidence >= 0.5:
-                    x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                    class_id = int(box.cls[0])
-                    label = f"{model.names[class_id]}: {confidence:.2f}"
-                    
-                    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
-                    cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        # Procesar YOLO solo cada 5 frames para mejorar rendimiento
+        if self.frame_count % 5 == 0:
+            results = model(img)
 
-        return frame.from_ndarray(img, format="bgr24")
+            for result in results:
+                for box in result.boxes:
+                    confidence = box.conf[0].item()
+                    if confidence >= 0.5:
+                        x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
+                        class_id = int(box.cls[0])
+                        label = f"{model.names[class_id]}: {confidence:.2f}"
+
+                        cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
+                        cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # 🔹 Agregar un mensaje antes de iniciar la cámara
 # Inicializar la variable en session_state si no existe
@@ -269,7 +270,14 @@ if st.session_state["camera_active"]:
         key="example",
         video_processor_factory=VideoProcessor,
         rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"video": True, "audio": False},
+        media_stream_constraints={
+            "video": {
+                "width": {"ideal": 640},  # Reducir resolución a 640x480 para mejorar velocidad
+                "height": {"ideal": 480},
+                "frameRate": {"ideal": 15}  # Reducir FPS para evitar lag
+            },
+            "audio": False,
+        },
     )
 
 
