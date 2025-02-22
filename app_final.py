@@ -221,16 +221,15 @@ if page == "DEMO":
     st.write('---')
 
 
-class VideoProcessor:
-    def recv(self, frame):
+class VideoProcessor(VideoTransformerBase):
+    def transform(self, frame):
         return av.VideoFrame.from_ndarray(frame.to_ndarray(format="bgr24"), format="bgr24")
 
 st.markdown("### Prueba de Cámara en Vivo")
 webrtc_streamer(
-    key="example",
-    video_processor_factory=YOLOVideoTransformer,
+    key="test",
+    video_processor_factory=VideoProcessor,
     rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
-
 
 st.image('images/line.png')
