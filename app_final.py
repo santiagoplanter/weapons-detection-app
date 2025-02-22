@@ -155,7 +155,7 @@ if page == "HOME":
     st.write('')
 
     st.image('images/traindataset.png')
-
+    
 
     st.write('')
     st.write('')
@@ -202,7 +202,7 @@ if page == "DEMO":
                     x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
                     class_id = int(box.cls[0])
                     label = f"{model.names[class_id]}: {confidence:.2f}"
-
+                    
                     # Draw bounding box and label
                     cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
                     cv2.putText(image_with_boxes, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2, cv2.LINE_AA)
@@ -225,7 +225,7 @@ if page == "DEMO":
         <h1 style="font-family: 'Open Sans', sans-serif; font-size: 48px; font-weight: 800; text-align: center">
             TRY WITH LIVE WEBCAM</h1>
             """, unsafe_allow_html=True) 
-
+    
     # 🔹 Define la función antes de llamarla
 
 
@@ -235,24 +235,6 @@ class VideoProcessor(VideoProcessorBase):
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")  # Convertir frame a NumPy array
-        
-        # Escribir en los logs para ver si llega aquí
-        st.write("Frame recibido")
-
-        # Realizar inferencia con YOLO
-        results = model(img)
-        
-        # Dibujar cajas en la imagen
-        for result in results:
-            for box in result.boxes:
-                confidence = box.conf[0].item()
-                if confidence >= 0.5:
-                    x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                    class_id = int(box.cls[0])
-                    label = f"{model.names[class_id]}: {confidence:.2f}"
-                    
-                    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
-                    cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         self.frame_count += 1  # Incrementar contador
 
         # Procesar YOLO solo cada 5 frames para mejorar rendimiento
@@ -270,7 +252,6 @@ class VideoProcessor(VideoProcessorBase):
                         cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
                         cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-        return frame.from_ndarray(img, format="bgr24")
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # 🔹 Agregar un mensaje antes de iniciar la cámara
