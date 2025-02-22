@@ -5,6 +5,8 @@ import tempfile
 import torch
 from ultralytics import YOLO
 from PIL import Image
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import av
 
 # PAGE SET UP
 # ===========
@@ -218,55 +220,33 @@ if page == "DEMO":
     st.write('')
     st.write('---')
 
-    # 📹 Live Webcam Detection with Stop Button
-    st.markdown("""
-        <h1 style="font-family: \'Open Sans\', sans-serif; font-size: 48px; font-weight: 800; text-align: center">
-            TRY WITH LIVE WEBCAM</h1>
-            """, unsafe_allow_html=True) 
-    col1, col2 = st.columns(2)
-    with col1:
-        start_button = st.button("Start Live Camera")
-    with col2:
-        stop_button = st.button("Stop Camera")
 
-    if start_button:
-        cap = cv2.VideoCapture(0)  # Open webcam
-        stframe = st.empty()  # Placeholder for displaying webcam feed
+class YOLOVideoTransformer(VideoTransformerBase):
+    def __init__(self):
+        self.model = YOLO("big_model_yolov11_knife.pt")  # Carga el modelo YOLO
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                st.error("Failed to open webcam")
-                break
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")  # Convierte el frame a formato OpenCV
 
-            # Run YOLO inference
-            results = model(frame)
+        # Ejecuta la detección de objetos
+        results = self.model(img)
 
-            # Draw detections (only if confidence is ≥ 0.3)
-            for result in results:
-                for box in result.boxes:
-                    confidence = box.conf[0].item()
-                    if confidence >= 0.3:  # Filter detections below 0.3 confidence
-                        x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                        class_id = int(box.cls[0])
+        # Dibuja los resultados en la imagen
+        for result in results:
+            for box in result.boxes:
+                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
+                class_id = int(box.cls[0])
+                confidence = box.conf[0].item()
 
-                        # Draw bounding box
-                        cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
+                if confidence >= 0.3:
+                    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+                    label = f"{self.model.names[class_id]}: {confidence:.2f}"
+                    cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-                        # Display class label and confidence
-                        label = f"{model.names[class_id]}: {confidence:.2f}"
-                        cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-            # Convert to RGB format for Streamlit
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+st.markdown("### Cámara en Vivo con Detección de Armas")
+webrtc_streamer(key="example", video_transformer_factory=YOLOVideoTransformer)
 
-            # Show real-time webcam feed
-            stframe.image(frame_rgb, channels="RGB", use_container_width=True)
-
-            # Check if "Stop Camera" was clicked
-            if stop_button:
-                cap.release()
-                st.success("Camera stopped.")
-                break
 
 st.image('images/line.png')
