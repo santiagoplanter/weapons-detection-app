@@ -19,6 +19,7 @@ st.set_page_config(
     )
 
 # Load trained YOLOv11 model
+DEVICE = "cpu"
 # ==========================
 MODEL_PATH = "big_model_yolov11_knife.pt" 
 model = YOLO(MODEL_PATH)
