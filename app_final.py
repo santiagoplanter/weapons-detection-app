@@ -5,8 +5,8 @@ import tempfile
 import torch
 from ultralytics import YOLO
 from PIL import Image
-from streamlit_webrtc import webrtc_streamer
 import av
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 
 
 # PAGE SET UP
@@ -227,9 +227,15 @@ if page == "DEMO":
             """, unsafe_allow_html=True) 
     
     # 🔹 Define la función antes de llamarla
-    def video_frame_callback(frame):
-        img = frame.to_ndarray(format="bgr24")  # Convertir el frame a NumPy array
+
+
+class VideoProcessor(VideoProcessorBase):
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")  # Convertir frame a NumPy array
         
+        # Escribir en los logs para ver si llega aquí
+        st.write("Frame recibido")
+
         # Realizar inferencia con YOLO
         results = model(img)
         
@@ -244,12 +250,18 @@ if page == "DEMO":
                     
                     cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
                     cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-    
-    # 🔹 Solo iniciar la cámara si el usuario presiona el botón
-    if st.button("Start Live Camera"):
-        webrtc_streamer(key="example", video_frame_callback=video_frame_callback)
+
+        return frame.from_ndarray(img, format="bgr24")
+
+# 🔹 Agregar un mensaje antes de iniciar la cámara
+if st.button("Start Live Camera"):
+    st.write("Iniciando WebRTC...")
+    webrtc_streamer(
+    key="example",
+    video_processor_factory=VideoProcessor,
+    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},  # Servidor STUN para conexiones WebRTC
+    media_stream_constraints={"video": True, "audio": False},  # Solo video, sin audio
+    )
 
 
 
