@@ -289,7 +289,6 @@ if st.session_state["camera_active"]:
         key="example",
         video_processor_factory=VideoProcessor,
         rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"video": True, "audio": False},
         media_stream_constraints={
             "video": {
                 "width": {"ideal": 640},  # Reducir resolución a 640x480 para mejorar velocidad
