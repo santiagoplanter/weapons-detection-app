@@ -272,9 +272,9 @@ if st.session_state["camera_active"]:
         rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
         media_stream_constraints={
             "video": {
-                "width": {"ideal": 640},  # Reducir resolución a 640x480 para mejorar velocidad
-                "height": {"ideal": 480},
-                "frameRate": {"ideal": 15}  # Reducir FPS para evitar lag
+                "width": {"ideal": 320},  # Reducir resolución a 640x480 para mejorar velocidad
+                "height": {"ideal": 240},
+                "frameRate": {"ideal": 10}  # Reducir FPS para evitar lag
             },
             "audio": False,
         },
