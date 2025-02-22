@@ -254,13 +254,22 @@ class VideoProcessor(VideoProcessorBase):
         return frame.from_ndarray(img, format="bgr24")
 
 # 🔹 Agregar un mensaje antes de iniciar la cámara
+# Inicializar la variable en session_state si no existe
+if "camera_active" not in st.session_state:
+    st.session_state["camera_active"] = False  # La cámara empieza apagada
+
+# Botón para activar/desactivar la cámara
 if st.button("Start Live Camera"):
+    st.session_state["camera_active"] = not st.session_state["camera_active"]  # Alternar estado
+
+# Mostrar la cámara solo si está activa
+if st.session_state["camera_active"]:
     st.write("Iniciando WebRTC...")
     webrtc_streamer(
-    key="example",
-    video_processor_factory=VideoProcessor,
-    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},  # Servidor STUN para conexiones WebRTC
-    media_stream_constraints={"video": True, "audio": False},  # Solo video, sin audio
+        key="example",
+        video_processor_factory=VideoProcessor,
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+        media_stream_constraints={"video": True, "audio": False},
     )
 
 
