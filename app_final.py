@@ -223,10 +223,9 @@ if page == "DEMO":
 
 class VideoProcessor:
     def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")  # Convierte el frame a formato OpenCV
-        return av.VideoFrame.from_ndarray(img, format="bgr24")  # Devuelve la imagen sin modificaciones
+        return av.VideoFrame.from_ndarray(frame.to_ndarray(format="bgr24"), format="bgr24")
 
-st.markdown("### Prueba de Cámara en Vivo (Sin Procesamiento)")
+st.markdown("### Prueba de Cámara en Vivo")
 webrtc_streamer(key="test", video_processor_factory=VideoProcessor)
 
 
