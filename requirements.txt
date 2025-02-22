@@ -1,8 +1,8 @@
 streamlit==1.42.2
+opencv-python-headless==4.11.0.86
 numpy==2.1.1
-torch==2.5.1  # Versión estable
-torchvision==0.20.0  # Compatible con torch 2.5.1
+torch==2.5.0
+torchvision==0.20.0
 ultralytics==8.3.78
 pillow==11.1.0
 streamlit-webrtc
-opencv-python-headless==4.5.5.64  # Versión estable y compatible con Streamlit
