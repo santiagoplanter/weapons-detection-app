@@ -221,32 +221,13 @@ if page == "DEMO":
     st.write('---')
 
 
-class YOLOVideoTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.model = YOLO("big_model_yolov11_knife.pt")  # Carga el modelo YOLO
-
-    def transform(self, frame):
+class VideoProcessor:
+    def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")  # Convierte el frame a formato OpenCV
+        return av.VideoFrame.from_ndarray(img, format="bgr24")  # Devuelve la imagen sin modificaciones
 
-        # Ejecuta la detección de objetos
-        results = self.model(img)
-
-        # Dibuja los resultados en la imagen
-        for result in results:
-            for box in result.boxes:
-                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                class_id = int(box.cls[0])
-                confidence = box.conf[0].item()
-
-                if confidence >= 0.3:
-                    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-                    label = f"{self.model.names[class_id]}: {confidence:.2f}"
-                    cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
-st.markdown("### Cámara en Vivo con Detección de Armas")
-webrtc_streamer(key="example", video_transformer_factory=YOLOVideoTransformer)
+st.markdown("### Prueba de Cámara en Vivo (Sin Procesamiento)")
+webrtc_streamer(key="test", video_processor_factory=VideoProcessor)
 
 
 st.image('images/line.png')
