@@ -194,11 +194,11 @@ if page == "DEMO":
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     
         # Convertir la imagen a un tensor de Torch
-        image_tensor = torch.from_numpy(image).float().permute(2, 0, 1).unsqueeze(0) / 255.0
+        image = np.ascontiguousarray(image) 
         print("Imagen procesada correctamente:", image_tensor.shape)  # Para debug
     
         # Ejecutar modelo
-        results = model(image_tensor)
+        results = model(image)
     
         # Dibujar detecciones
         image_with_boxes = image.copy()
