@@ -5,6 +5,9 @@ import tempfile
 import torch
 from ultralytics import YOLO
 from PIL import Image
+from streamlit_webrtc import webrtc_streamer
+import av
+
 
 # PAGE SET UP
 # ===========
@@ -228,44 +231,28 @@ if page == "DEMO":
     with col2:
         stop_button = st.button("Stop Camera")
 
-    if start_button:
-        cap = cv2.VideoCapture(0)  # Open webcam
-        stframe = st.empty()  # Placeholder for displaying webcam feed
+def video_frame_callback(frame):
+    img = frame.to_ndarray(format="bgr24")  # Convertir el frame a NumPy array
+    
+    # Realizar inferencia con YOLO
+    results = model(img)
+    
+    # Dibujar cajas en la imagen
+    for result in results:
+        for box in result.boxes:
+            confidence = box.conf[0].item()
+            if confidence >= 0.5:
+                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
+                class_id = int(box.cls[0])
+                label = f"{model.names[class_id]}: {confidence:.2f}"
+                
+                cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
+                cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                st.error("Failed to open webcam")
-                break
+    return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-            # Run YOLO inference
-            results = model(frame)
+# Iniciar streaming
+webrtc_streamer(key="example", video_frame_callback=video_frame_callback)
 
-            # Draw detections (only if confidence is ≥ 0.3)
-            for result in results:
-                for box in result.boxes:
-                    confidence = box.conf[0].item()
-                    if confidence >= 0.3:  # Filter detections below 0.3 confidence
-                        x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                        class_id = int(box.cls[0])
-
-                        # Draw bounding box
-                        cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
-                        
-                        # Display class label and confidence
-                        label = f"{model.names[class_id]}: {confidence:.2f}"
-                        cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-            # Convert to RGB format for Streamlit
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            # Show real-time webcam feed
-            stframe.image(frame_rgb, channels="RGB", use_container_width=True)
-
-            # Check if "Stop Camera" was clicked
-            if stop_button:
-                cap.release()
-                st.success("Camera stopped.")
-                break
 
 st.image('images/line.png')
