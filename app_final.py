@@ -5,9 +5,6 @@ import tempfile
 import torch
 from ultralytics import YOLO
 from PIL import Image
-import av
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
-
 
 # PAGE SET UP
 # ===========
@@ -19,7 +16,6 @@ st.set_page_config(
     )
 
 # Load trained YOLOv11 model
-DEVICE = "cpu"
 # ==========================
 MODEL_PATH = "big_model_yolov11_knife.pt" 
 model = YOLO(MODEL_PATH)
@@ -156,7 +152,7 @@ if page == "HOME":
     st.write('')
 
     st.image('images/traindataset.png')
-    
+
 
     st.write('')
     st.write('')
@@ -185,49 +181,12 @@ if page == "DEMO":
     uploaded_image = st.file_uploader("", type=["jpg", "png", "jpeg"])
 
     if uploaded_image is not None:
-        # Convertir la imagen a formato NumPy
-        image = Image.open(uploaded_image).convert("RGB")  
+        # Convert to OpenCV format
+        image = Image.open(uploaded_image)
         image = np.array(image)
-    
-        # Asegurar que la imagen es RGB
-        if len(image.shape) == 2:  # Imagen en escala de grises
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    
-        # Convertir la imagen a un tensor de Torch
-        image = np.ascontiguousarray(image) 
-        print("Imagen procesada correctamente:", image_tensor.shape)  # Para debug
-    
-        # Ejecutar modelo
-        results = model(image)
-    
-        # Dibujar detecciones
-        image_with_boxes = image.copy()
-        for result in results:
-            for box in result.boxes:
-                confidence = box.conf[0].item()  # Obtener confianza
-    
-                if confidence >= 0.5:
-                    x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                    class_id = int(box.cls[0])
-                    label = f"{model.names[class_id]}: {confidence:.2f}"
-    
-                    # Dibujar el cuadro delimitador y la etiqueta
-                    cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
-                    cv2.putText(image_with_boxes, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2, cv2.LINE_AA)
-        # Mostrar imagen con detecciones
-        st.image(image_with_boxes, caption="Detected Image", use_column_width=True)
-    
-    st.image("images/line.png")
-    
-    # Mostrar la imagen con detecciones
-    col1, col2, col3 = st.columns([1, 3, 1])
-    with col1:
-        st.empty()
-    with col2:
-        st.image(image_with_boxes, caption="Detected Image", use_container_width=True)
-    with col3:
-        st.empty()
 
+        # Run YOLO model inference
+        results = model(image)
 
         # Draw detections only if confidence is greater than or equal to 0.5
         image_with_boxes = image.copy()
@@ -240,7 +199,7 @@ if page == "DEMO":
                     x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
                     class_id = int(box.cls[0])
                     label = f"{model.names[class_id]}: {confidence:.2f}"
-                    
+
                     # Draw bounding box and label
                     cv2.rectangle(image_with_boxes, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
                     cv2.putText(image_with_boxes, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2, cv2.LINE_AA)
@@ -250,6 +209,7 @@ if page == "DEMO":
             st.empty()
         with col2:
             # Display output image below the columns
+            t.image(image_with_boxes, caption="Detected Image", use_container_width=True)
             st.image(image_with_boxes, caption="Detected Image", use_container_width=True)
         with col3:
             st.empty()
@@ -260,64 +220,53 @@ if page == "DEMO":
 
     # 📹 Live Webcam Detection with Stop Button
     st.markdown("""
-        <h1 style="font-family: 'Open Sans', sans-serif; font-size: 48px; font-weight: 800; text-align: center">
+        <h1 style="font-family: \'Open Sans\', sans-serif; font-size: 48px; font-weight: 800; text-align: center">
             TRY WITH LIVE WEBCAM</h1>
             """, unsafe_allow_html=True) 
-    
-    # 🔹 Define la función antes de llamarla
+    col1, col2 = st.columns(2)
+    with col1:
+        start_button = st.button("Start Live Camera")
+    with col2:
+        stop_button = st.button("Stop Camera")
 
+    if start_button:
+        cap = cv2.VideoCapture(0)  # Open webcam
+        stframe = st.empty()  # Placeholder for displaying webcam feed
 
-class VideoProcessor(VideoProcessorBase):
-    def __init__(self):
-        self.frame_count = 0  # Contador de frames
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                st.error("Failed to open webcam")
+                break
 
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")  # Convertir frame a NumPy array
-        self.frame_count += 1  # Incrementar contador
+            # Run YOLO inference
+            results = model(frame)
 
-        # Procesar YOLO solo cada 5 frames para mejorar rendimiento
-        if self.frame_count % 5 == 0:
-            results = model(img)
-
+            # Draw detections (only if confidence is ≥ 0.3)
             for result in results:
                 for box in result.boxes:
                     confidence = box.conf[0].item()
-                    if confidence >= 0.5:
+                    if confidence >= 0.3:  # Filter detections below 0.3 confidence
                         x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
                         class_id = int(box.cls[0])
+
+                        # Draw bounding box
+                        cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
+
+                        # Display class label and confidence
                         label = f"{model.names[class_id]}: {confidence:.2f}"
+                        cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-                        cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3)
-                        cv2.putText(img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            # Convert to RGB format for Streamlit
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
+            # Show real-time webcam feed
+            stframe.image(frame_rgb, channels="RGB", use_container_width=True)
 
-# 🔹 Agregar un mensaje antes de iniciar la cámara
-# Inicializar la variable en session_state si no existe
-if "camera_active" not in st.session_state:
-    st.session_state["camera_active"] = False  # La cámara empieza apagada
-
-# Botón para activar/desactivar la cámara
-if st.button("Start Live Camera"):
-    st.session_state["camera_active"] = not st.session_state["camera_active"]  # Alternar estado
-
-# Mostrar la cámara solo si está activa
-if st.session_state["camera_active"]:
-    st.write("Iniciando WebRTC...")
-    webrtc_streamer(
-        key="example",
-        video_processor_factory=VideoProcessor,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={
-            "video": {
-                "width": {"ideal": 640},  # Reducir resolución a 640x480 para mejorar velocidad
-                "height": {"ideal": 480},
-                "frameRate": {"ideal": 15}  # Reducir FPS para evitar lag
-            },
-            "audio": False,
-        },
-    )
-
-
+            # Check if "Stop Camera" was clicked
+            if stop_button:
+                cap.release()
+                st.success("Camera stopped.")
+                break
 
 st.image('images/line.png')
