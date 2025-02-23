@@ -221,26 +221,4 @@ if page == "DEMO":
     st.write('---')
 
 
-class VideoProcessor(VideoTransformerBase):
-    def transform(self, frame):
-        return av.VideoFrame.from_ndarray(frame.to_ndarray(format="bgr24"), format="bgr24")
-
-st.markdown("### Prueba de Cámara en Vivo")
-webrtc_streamer(
-    key="example",
-    rtc_configuration={
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},  # Servidor STUN de Google
-            {"urls": ["stun:stun1.l.google.com:19302"]}, # Otro STUN de Google
-            {"urls": ["stun:stun2.l.google.com:19302"]}, # Otro STUN de Google
-            {
-                "urls": "turn:relay.metered.ca:80",  # Servidor TURN gratuito
-                "username": "open",
-                "credential": "open"
-            }
-        ]
-    }
-)
-
-
 st.image('images/line.png')
