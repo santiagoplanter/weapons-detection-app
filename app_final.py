@@ -212,7 +212,6 @@ if page == "DEMO":
         with col2:
             # Display output image below the columns
             st.image(image_with_boxes, caption="Detected Image", use_container_width=True)
-            st.image(image_with_boxes, caption="Detected Image", use_container_width=True)
         with col3:
             st.empty()
 
